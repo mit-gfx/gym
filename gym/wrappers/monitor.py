@@ -174,7 +174,8 @@ class Monitor(Wrapper):
             self._flush()
 
         # Record stats
-        self.stats_recorder.after_step(observation, reward, done, info)
+        #TODOTODO: come up with new stats recorder
+        #self.stats_recorder.after_step(observation, reward, done, info)
         # Record video
         self.video_recorder.capture_frame()
 

@@ -90,6 +90,11 @@ register(
     max_episode_steps=500,
 )
 
+register(
+		id='PerfExpPendulum-v0',
+		entry_point='gym.envs.classic_control:PerfExpPendulumEnv',
+)
+
 # Box2d
 # ----------------------------------------
 

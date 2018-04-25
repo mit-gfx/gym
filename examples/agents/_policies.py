@@ -17,3 +17,11 @@ class ContinuousActionLinearPolicy(object):
     def act(self, ob):
         a = ob.dot(self.W) + self.b
         return a
+        
+class ContinuousActionLinearPolicyNew(object):
+    def __init__(self, theta):
+        self.w = theta[:-1]
+        self.b = theta[-1]
+    def act(self, ob):
+        y = ob.dot(self.w) + self.b
+        return y

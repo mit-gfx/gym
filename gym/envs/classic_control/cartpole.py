@@ -70,6 +70,7 @@ class CartPoleEnv(gym.Env):
                 or theta < -self.theta_threshold_radians \
                 or theta > self.theta_threshold_radians
         done = bool(done)
+        print(done)
 
         if not done:
             reward = 1.0

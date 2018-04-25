@@ -6,11 +6,11 @@ import numpy as np
 from six.moves import cPickle as pickle
 import json, sys, os
 from os import path
-from _policies import BinaryActionLinearPolicy # Different file so it can be unpickled
+from _policies import ContinuousActionLinearPolicyNew # Different file so it can be unpickled
 import argparse
 import IPython
 
-def cem(f, th_mean, batch_size, n_iter, elite_frac, initial_std=1.0):
+def cem_perfexp(f, th_mean, batch_size, n_iter, elite_frac, initial_std=1.0):
     """
     Generic implementation of the cross-entropy method for maximizing a black-box function
 
@@ -39,9 +39,14 @@ def do_rollout(agent, env, num_steps, render=False):
     for t in range(num_steps):
         a = agent.act(ob)
         (ob, reward, done, _info) = env.step(a)
+        #IPython.embed()
         total_rew += reward
         if render and t%3==0: env.render()
-        if done: break
+        if done: break    
+    #set total reward by a distance to a target:
+    #total_rew = total_rew[0]
+    total_rew = -np.linalg.norm(total_rew - target)
+    
     return total_rew, t+1
 
 if __name__ == '__main__':
@@ -49,20 +54,29 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--display', action='store_true')
-    parser.add_argument('target', nargs="?", default="CartPole-v0")
+    parser.add_argument('target', nargs="?", default="PerfExpPendulum-v0")
+    parser.add_argument('--target_reward', nargs = 2)
+    parser.add_argument('--w_binary', nargs = 1, default = 'w.bin')
     args = parser.parse_args()
 
     env = gym.make(args.target)
+    num_steps = 2000
+    
     env.seed(0)
+    env.set_target(args.target_reward)
+    
+    global target
+    target = env.target #TODO: refactor these two lines
     np.random.seed(0)
-    params = dict(n_iter=10, batch_size=25, elite_frac = 0.2)
-    num_steps = 200
+    params = dict(n_iter=50, batch_size=1000, elite_frac = 0.2)
+    
 
     # You provide the directory to write to (can be an existing
     # directory, but can't contain previous monitor results. You can
     # also dump to a tempdir if you'd like: tempfile.mkdtemp().
     outdir = '/tmp/cem-agent-results'
     env = wrappers.Monitor(env, outdir, force=True)
+    
 
     # Prepare snapshotting
     # ----------------------------------------
@@ -75,16 +89,21 @@ if __name__ == '__main__':
     # ------------------------------------------
 
     def noisy_evaluation(theta):
-        agent = BinaryActionLinearPolicy(theta)
+        agent = ContinuousActionLinearPolicyNew(theta)        
         rew, T = do_rollout(agent, env, num_steps)
         return rew
 
     # Train the agent, and snapshot each stage
+    
+    #load w here:
+    #w = ReadMatrixFromFile(w_binary)
+    w = np.array([0.0, 0.0, 0.0])
+    
     for (i, iterdata) in enumerate(
-        cem(noisy_evaluation, np.zeros(env.observation_space.shape[0]+1), **params)):
+        cem_perfexp(noisy_evaluation, w, **params)):
         print('Iteration %2i. Episode mean reward: %7.3f'%(i, iterdata['y_mean']))
-        agent = BinaryActionLinearPolicy(iterdata['theta_mean'])
-        if args.display: do_rollout(agent, env, 200, render=True)
+        agent = ContinuousActionLinearPolicyNew(iterdata['theta_mean'])
+        if args.display: do_rollout(agent, env, 2000, render=True)
         writefile('agent-%.4i.pkl'%i, str(pickle.dumps(agent, -1)))
 
     # Write out the env at the end so we store the parameters of this
