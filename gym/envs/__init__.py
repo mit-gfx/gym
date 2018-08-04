@@ -511,6 +511,11 @@ for game in ['air_raid', 'alien', 'amidar', 'assault', 'asterix', 'asteroids', '
         )
 
 
+register(
+   	id='Spaceship-v0',
+   	entry_point='gym.envs.toy_pareto:SpaceshipEnv',
+)
+
 # Unit test
 # ---------
 

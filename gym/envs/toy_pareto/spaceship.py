@@ -9,7 +9,7 @@ from gym.utils import seeding
 import numpy as np
 import IPython
 
-class SpaceShip(gym.Env):
+class SpaceshipEnv(gym.Env):
     def __init__(self):
         self.phi = np.array([1.0]) #Just the mass
         self.H = 1000 #max horizon in steps
@@ -36,7 +36,8 @@ class SpaceShip(gym.Env):
         #Action should be 1D
         
         #first, get the acceleration:
-        a = action[0] / self.phi[0]
+        #TODO: assuming the action is 1-D now
+        a = action / self.phi[0]
         
         #Next, update the velocity:
         self.state[1] += a * self.dt
