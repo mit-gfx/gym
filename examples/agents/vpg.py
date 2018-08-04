@@ -33,7 +33,11 @@ class Policy(nn.Module):
     def __init__(self):
         super(Policy, self).__init__()
         self.affine1 = nn.Linear(2, 128)
+        torch.nn.init.normal(self.affine1.weight)
+        torch.nn.init.normal(self.affine1.bias)
         self.affine2 = nn.Linear(128, 2)
+        torch.nn.init.normal(self.affine2.weight)
+        torch.nn.init.normal(self.affine2.bias)
 
         self.saved_log_probs = []
         self.rewards = []
@@ -72,8 +76,12 @@ def finish_episode():
         policy_loss.append(-log_prob * reward.float())
     optimizer.zero_grad()
     policy_loss = torch.cat(policy_loss).sum()
-    policy_loss.backward()
+    policy_loss.backward(retain_graph=True, create_graph=True)
     optimizer.step()
+    #let's just print out the norm of part of the paramters here, for simplicity:
+    print('some of the norm is')
+    print(np.linalg.norm(list(policy.parameters())[1].grad.detach().numpy()))
+    
     del policy.rewards[:]
     del policy.saved_log_probs[:]
 
@@ -89,7 +97,7 @@ def main():
                 env.render()
             policy.rewards.append(reward)
 
-        print(np.mean(policy.rewards))
+        #print(np.mean(policy.rewards))
         finish_episode()
         '''
         if i_episode % args.log_interval == 0:

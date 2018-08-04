@@ -47,6 +47,8 @@ class SpaceshipEnv(gym.Env):
         
         #Did we succeed?
         success = np.linalg.norm(self.state - self.goal) < self.done_thresh
+        if success:
+            print("Success!!!!")
             
         #Did we fail?
         fail = (not success) and (self.timestep == self.H)
@@ -55,15 +57,17 @@ class SpaceshipEnv(gym.Env):
         done = success or fail
             
         #Accrue rewards:
-        fail_val = -np.finfo(np.float32).max  #TODO: Make this a large but not absurd value that upper bounds R1 and R2
+        #fail_val = -np.finfo(np.float32).max  #TODO: Make this a large but not absurd value that upper bounds R1 and R2
+        fail_val = -1000.0
         if fail:
             R1 = fail_val
             R2 = fail_val
         else:
-            R1 = 1.0 #time
-            R2 = np.inner(action, action)
+            R1 = -1.0 #time
+            R2 = -np.inner(action, action)
             
-        reward = np.array([R1, R2])
+        #reward = np.array([R1, R2])
+        reward = np.array([R1])
         
         #Note: reward is now 2D!!
         return np.array(self.state), reward, done, {}
