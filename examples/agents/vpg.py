@@ -60,7 +60,7 @@ class Policy(nn.Module):
 
 
 policy = Policy()
-optimizer = optim.Adam(policy.parameters(), lr=1.0e-6)
+optimizer = optim.LBFGS(policy.parameters(), lr=1.0e-2)
 eps = np.finfo(np.float32).eps.item()
 
 
@@ -73,16 +73,17 @@ def select_action(state):
     policy.log_probs.append(m.log_prob(action))
     #TODO: this only works because the action is 1-D
     return action.item()
+    
+    
 
 
-def finish_episode(i):
+def finish_episode():
     policy_loss = []
     rewards = []
     for r in policy.rewards:
         rewards.append(r)
     rewards = torch.tensor(rewards)
-    if i % 1000 == 0:
-        print('mean reward is ', torch.mean(rewards))
+    print('mean reward is ', torch.mean(rewards))
     rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
     
     for log_prob, reward in zip(policy.saved_log_probs, rewards):
@@ -90,39 +91,47 @@ def finish_episode(i):
     optimizer.zero_grad()
     policy_loss = torch.stack(policy_loss).sum()
     policy_loss.backward(retain_graph=True, create_graph=False)
-    optimizer.step()
-    #let's just print out the norm of part of the paramters here, for simplicity:
-    if i % 1000 == 0:
-        print('loss is ', -policy_loss)        
-        print('some of the norm is')
-        print(np.linalg.norm(list(policy.parameters())[1].grad.detach().numpy()))
-    
     del policy.rewards[:]
     del policy.step_rewards[:]
     del policy.saved_log_probs[:]
+    return policy_loss
+    #optimizer.step()
+    #let's just print out the norm of part of the paramters here, for simplicity:
+    
+    
+    
+    
+    
+def closure():
+    optimizer.zero_grad()
+    state = env.reset()        
+    for t in range(1000):  # Don't infinite loop while learning
+        #TODO: make sure episodes line up with rollouts or in some way flag that we're in the final step
+        action = select_action(state)
+        state, reward, done, _ = env.step(action)
+        policy.step_rewards.append(reward)
+        if args.render:
+            env.render()
+        if done:
+            env.reset(random=False)
+            policy.commit()
+            
+
+        #print(np.mean(policy.rewards))
+    loss = finish_episode()
+    print('loss:', loss.item())
+    #loss.backward()
+    return loss
+    
+
 
 
 def main():
     i = 0
     for i_episode in count(1):
-        state = env.reset()        
-        for t in range(10000):  # Don't infinite loop while learning
-            i += 1
-            #TODO: make sure episodes line up with rollouts or in some way flag that we're in the final step
-            action = select_action(state)
-            state, reward, done, _ = env.step(action)
-            policy.step_rewards.append(reward)
-            if args.render:
-                env.render()
-            if done:
-                env.reset(random=False)
-                policy.commit()
-            
-
-        #print(np.mean(policy.rewards))
-        finish_episode(i)
+        optimizer.step(closure)
         global actions
-        print(torch.mean(torch.stack(actions)))
+        #print(torch.mean(torch.abs(torch.stack(actions))))
         actions = []
         '''
         if i_episode % args.log_interval == 0:
