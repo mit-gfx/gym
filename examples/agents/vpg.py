@@ -49,7 +49,7 @@ class Policy(nn.Module):
 
 
 policy = Policy()
-optimizer = optim.Adam(policy.parameters(), lr=1.0)
+optimizer = optim.Adam(policy.parameters(), lr=1.0e-4)
 eps = np.finfo(np.float32).eps.item()
 
 
@@ -67,7 +67,7 @@ def finish_episode():
     R = 0
     policy_loss = []
     rewards = []
-    for r in policy.rewards[::-1]:
+    for r in policy.rewards:
         rewards.append(r)
     rewards = torch.tensor(rewards)
     #rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
@@ -76,6 +76,7 @@ def finish_episode():
     optimizer.zero_grad()
     policy_loss = torch.cat(policy_loss).sum()
     print('loss is ', policy_loss)
+    print('mean reward is ', torch.mean(rewards))
     policy_loss.backward(retain_graph=True, create_graph=True)
     optimizer.step()
     #let's just print out the norm of part of the paramters here, for simplicity:
@@ -95,6 +96,8 @@ def main():
             state, reward, done, _ = env.step(action)
             if args.render:
                 env.render()
+            if done:
+                env.reset()
             policy.rewards.append(reward)
 
         #print(np.mean(policy.rewards))

@@ -52,9 +52,12 @@ class SpaceshipEnv(gym.Env):
             
         #Did we fail?
         fail = (not success) and (self.timestep == self.H)
+        if fail:
+            print('failure')
         
         #Are we done?
         done = success or fail
+        
             
         #Accrue rewards:
         #fail_val = -np.finfo(np.float32).max  #TODO: Make this a large but not absurd value that upper bounds R1 and R2
@@ -75,6 +78,7 @@ class SpaceshipEnv(gym.Env):
         reward = np.array([R1])
         
         #Note: reward is now 2D!!
+        self.timestep += 1
         return np.array(self.state), reward, done, {}
      
     def reset(self, random=False):
