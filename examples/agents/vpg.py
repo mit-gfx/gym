@@ -29,23 +29,23 @@ torch.manual_seed(args.seed)
 
 
 class Policy(nn.Module):
-    #TODO: definitely want to change this model
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(2, 20)
-        torch.nn.init.normal(self.affine1.weight)
-        torch.nn.init.normal(self.affine1.bias)
-        self.affine2 = nn.Linear(20, 2)
-        torch.nn.init.normal(self.affine2.weight)
-        torch.nn.init.normal(self.affine2.bias)
+        self.affine1 = nn.Linear(2, 128)
+        self.affine2 = nn.Linear(128, 2)
 
         self.saved_log_probs = []
         self.rewards = []
+        self.step_rewards = []
 
-    def forward(self, x):        
-        x = F.tanh(self.affine1(x))
-        action_scores = F.tanh(self.affine2(x))
-        return action_scores
+    def forward(self, x):
+        x = F.relu(self.affine1(x))
+        action_scores = self.affine2(x)
+        return F.softmax(action_scores, dim=1)
+        
+    def commit_rewards(self):
+        self.rewards.append(np.mean(self.step_rewards))
+        self.step_rewards = []
 
 
 policy = Policy()
@@ -63,8 +63,7 @@ def select_action(state):
     return action.item()
 
 
-def finish_episode():
-    R = 0
+def finish_episode(i):
     policy_loss = []
     rewards = []
     for r in policy.rewards:
@@ -74,34 +73,40 @@ def finish_episode():
     for log_prob, reward in zip(policy.saved_log_probs, rewards):
         policy_loss.append(-log_prob * reward.float())
     optimizer.zero_grad()
-    policy_loss = torch.cat(policy_loss).sum()
-    print('loss is ', policy_loss)
-    print('mean reward is ', torch.mean(rewards))
-    policy_loss.backward(retain_graph=True, create_graph=True)
+    policy_loss = torch.stack(policy_loss).sum()
+    policy_loss.backward(retain_graph=True, create_graph=False)
     optimizer.step()
     #let's just print out the norm of part of the paramters here, for simplicity:
-    print('some of the norm is')
-    print(np.linalg.norm(list(policy.parameters())[1].grad.detach().numpy()))
+    if i % 1000 == 0:
+        print('loss is ', policy_loss)
+        print('mean reward is ', torch.mean(rewards))
+        print('some of the norm is')
+        print(np.linalg.norm(list(policy.parameters())[1].grad.detach().numpy()))
     
     del policy.rewards[:]
+    del policy.step_rewards[:]
     del policy.saved_log_probs[:]
 
 
 def main():
+    i = 0
     for i_episode in count(1):
-        state = env.reset()
+        state = env.reset()        
         for t in range(10000):  # Don't infinite loop while learning
+            i += 1
             #TODO: make sure episodes line up with rollouts or in some way flag that we're in the final step
             action = select_action(state)
             state, reward, done, _ = env.step(action)
+            policy.step_rewards.append(reward)
             if args.render:
                 env.render()
             if done:
-                env.reset()
-            policy.rewards.append(reward)
+                env.reset(random=True)
+                policy.commit_rewards()
+            
 
         #print(np.mean(policy.rewards))
-        finish_episode()
+        finish_episode(i)
         '''
         if i_episode % args.log_interval == 0:
             print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(

@@ -39,15 +39,18 @@ class SpaceshipEnv(gym.Env):
         #TODO: assuming the action is 1-D now
         a = action / self.phi[0]
         
+        #First, update the position:
+        self.state[0] += self.state[1] * self.dt
+        
         #Next, update the velocity:
         self.state[1] += a * self.dt
         
-        #Then, update the position:
-        self.state[0] += self.state[1] * self.dt
+        
         
         #Did we succeed?
         success = np.linalg.norm(self.state - self.goal) < self.done_thresh
         if success:
+            R1 = 1000.0
             print("Success!!!!")
             
         #Did we fail?
@@ -67,6 +70,9 @@ class SpaceshipEnv(gym.Env):
             R1 = fail_val
             R2 = fail_val
         else:
+            #print((self.goal - self.state) / np.linalg.norm(self.goal - self.state))
+            #print(np.array([self.state[1], a]))
+            #IPython.embed()
             R1 = np.dot((self.goal - self.state) / np.linalg.norm(self.goal - self.state), np.array([self.state[1], a]))
             #if self.state[0] < self.goal[0]:
             #    R1 = self.state[1]
@@ -83,7 +89,7 @@ class SpaceshipEnv(gym.Env):
      
     def reset(self, random=False):
         if random:
-            self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(2,))
+            self.state = self.np_random.uniform(low=-0.1, high=0.1, size=(2,))
         else:
             self.state = np.zeros([2])
             
