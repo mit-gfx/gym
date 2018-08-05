@@ -31,21 +31,27 @@ torch.manual_seed(args.seed)
 class Policy(nn.Module):
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(2, 128)
-        self.affine2 = nn.Linear(128, 2)
+        self.affine1 = nn.Linear(2, 2)
+        torch.nn.init.normal(self.affine1.weight)
+        torch.nn.init.normal(self.affine1.bias)
+        self.affine2 = nn.Linear(2, 2)
+        torch.nn.init.normal(self.affine2.weight)
+        torch.nn.init.normal(self.affine2.bias)
 
         self.saved_log_probs = []
         self.rewards = []
         self.step_rewards = []
 
-    def forward(self, x):
-        x = F.relu(self.affine1(x))
-        action_scores = self.affine2(x)
-        return F.softmax(action_scores, dim=1)
+    def forward(self, x):        
+        x = F.tanh(self.affine1(x))
+        action_scores = F.tanh(self.affine2(x))
+        return action_scores
         
     def commit_rewards(self):
         self.rewards.append(np.mean(self.step_rewards))
         self.step_rewards = []
+        
+
 
 
 policy = Policy()
