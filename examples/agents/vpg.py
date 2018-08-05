@@ -32,10 +32,10 @@ class Policy(nn.Module):
     #TODO: definitely want to change this model
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(2, 10)
+        self.affine1 = nn.Linear(2, 20)
         torch.nn.init.normal(self.affine1.weight)
         torch.nn.init.normal(self.affine1.bias)
-        self.affine2 = nn.Linear(10, 2)
+        self.affine2 = nn.Linear(20, 2)
         torch.nn.init.normal(self.affine2.weight)
         torch.nn.init.normal(self.affine2.bias)
 
@@ -49,7 +49,7 @@ class Policy(nn.Module):
 
 
 policy = Policy()
-optimizer = optim.Adam(policy.parameters(), lr=1.0e-2)
+optimizer = optim.Adam(policy.parameters(), lr=1.0)
 eps = np.finfo(np.float32).eps.item()
 
 
