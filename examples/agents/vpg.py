@@ -32,10 +32,10 @@ class Policy(nn.Module):
     #TODO: definitely want to change this model
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(2, 2)
+        self.affine1 = nn.Linear(2, 10)
         torch.nn.init.normal(self.affine1.weight)
         torch.nn.init.normal(self.affine1.bias)
-        self.affine2 = nn.Linear(2, 2)
+        self.affine2 = nn.Linear(10, 2)
         torch.nn.init.normal(self.affine2.weight)
         torch.nn.init.normal(self.affine2.bias)
 
@@ -68,8 +68,7 @@ def finish_episode():
     policy_loss = []
     rewards = []
     for r in policy.rewards[::-1]:
-        R = r + args.gamma * R
-        rewards.insert(0, R)
+        rewards.append(r)
     rewards = torch.tensor(rewards)
     #rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
     for log_prob, reward in zip(policy.saved_log_probs, rewards):

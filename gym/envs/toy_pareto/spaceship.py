@@ -64,12 +64,12 @@ class SpaceshipEnv(gym.Env):
             R1 = fail_val
             R2 = fail_val
         else:
-            R1 = -np.linalg.norm(self.state - self.goal)
+            R1 = np.dot(self.goal - self.state, np.array([self.state[1], a]))
             #if self.state[0] < self.goal[0]:
             #    R1 = self.state[1]
             #else:
             #    R1 = -self.state[1]
-            R2 = -np.inner(action, action)
+            R2 = -np.dot(action, action)
             
         #reward = np.array([R1, R2])
         reward = np.array([R1])
