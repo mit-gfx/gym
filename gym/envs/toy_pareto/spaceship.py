@@ -48,15 +48,17 @@ class SpaceshipEnv(gym.Env):
         
         
         #Did we succeed?
-        success = np.linalg.norm(self.state - self.goal) < self.done_thresh
+        success = np.linalg.norm(self.state[0] - self.goal[0]) < self.done_thresh
         if success:
-            R1 = 1000.0
-            print("Success!!!!")
+            pass
+            R1 = 10.0
+            #print("Success!!!!")
             
         #Did we fail?
         fail = (not success) and (self.timestep == self.H)
         if fail:
-            print('failure')
+            pass
+            #print('failure')
         
         #Are we done?
         done = success or fail
@@ -73,7 +75,7 @@ class SpaceshipEnv(gym.Env):
             #print((self.goal - self.state) / np.linalg.norm(self.goal - self.state))
             #print(np.array([self.state[1], a]))
             #IPython.embed()
-            R1 = np.dot((self.goal - self.state) / np.linalg.norm(self.goal - self.state), np.array([self.state[1], a]))
+            R1 = np.dot((self.goal[0] - self.state[0]) / np.linalg.norm(self.goal[0] - self.state[0]), np.array([self.state[1], a])[0])
             #if self.state[0] < self.goal[0]:
             #    R1 = self.state[1]
             #else:
@@ -88,6 +90,11 @@ class SpaceshipEnv(gym.Env):
         return np.array(self.state), reward, done, {}
      
     def reset(self, random=False):
+        try:
+            #print('state at reset is', self.state)
+            pass
+        except:
+            pass
         if random:
             self.state = self.np_random.uniform(low=-0.1, high=0.1, size=(2,))
         else:

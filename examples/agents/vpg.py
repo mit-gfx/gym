@@ -9,12 +9,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import *
 import IPython
+import time
 
 
 parser = argparse.ArgumentParser(description='PyTorch REINFORCE example')
 parser.add_argument('--gamma', type=float, default=1.0, metavar='G',
                     help='discount factor (default: 1.0)') #defaults to not discounted; gamma = 1.0
-parser.add_argument('--seed', type=int, default=543, metavar='N',
+parser.add_argument('--seed', type=int, default=0, metavar='N',
                     help='random seed (default: 543)') #Yo it's a seed
 parser.add_argument('--render', action='store_true',
                     help='render the environment')
@@ -24,17 +25,18 @@ args = parser.parse_args()
 
 
 env = gym.make('Spaceship-v0')
-env.seed(args.seed)
+env.seed(int(time.time()))
 torch.manual_seed(args.seed)
+actions = []
 
 
 class Policy(nn.Module):
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(2, 20)
+        self.affine1 = nn.Linear(2, 2)
         torch.nn.init.normal_(self.affine1.weight)
         torch.nn.init.normal_(self.affine1.bias)
-        self.affine2 = nn.Linear(20, 2)
+        self.affine2 = nn.Linear(2, 2)
         torch.nn.init.normal_(self.affine2.weight)
         torch.nn.init.normal_(self.affine2.bias)
 
@@ -58,7 +60,7 @@ class Policy(nn.Module):
 
 
 policy = Policy()
-optimizer = optim.Adam(policy.parameters(), lr=1.0e-2)
+optimizer = optim.Adam(policy.parameters(), lr=1.0e-4)
 eps = np.finfo(np.float32).eps.item()
 
 
@@ -67,6 +69,7 @@ def select_action(state):
     probs = policy(state)
     m = Normal(probs[0][0], torch.abs(probs[0][1]))
     action = m.sample()
+    actions.append(action)
     policy.log_probs.append(m.log_prob(action))
     #TODO: this only works because the action is 1-D
     return action.item()
@@ -87,7 +90,7 @@ def finish_episode(i):
     optimizer.step()
     #let's just print out the norm of part of the paramters here, for simplicity:
     if i % 1000 == 0:
-        print('loss is ', policy_loss)
+        print('loss is ', -policy_loss)
         print('mean reward is ', torch.mean(rewards))
         print('some of the norm is')
         print(np.linalg.norm(list(policy.parameters())[1].grad.detach().numpy()))
@@ -101,7 +104,7 @@ def main():
     i = 0
     for i_episode in count(1):
         state = env.reset()        
-        for t in range(10000):  # Don't infinite loop while learning
+        for t in range(100000):  # Don't infinite loop while learning
             i += 1
             #TODO: make sure episodes line up with rollouts or in some way flag that we're in the final step
             action = select_action(state)
@@ -116,6 +119,9 @@ def main():
 
         #print(np.mean(policy.rewards))
         finish_episode(i)
+        global actions
+        print(torch.mean(torch.stack(actions)))
+        actions = []
         '''
         if i_episode % args.log_interval == 0:
             print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
