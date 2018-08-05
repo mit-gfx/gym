@@ -12,7 +12,7 @@ import IPython
 class SpaceshipEnv(gym.Env):
     def __init__(self):
         self.phi = np.array([1.0]) #Just the mass
-        self.H = 1000 #max horizon in steps
+        self.H = 100 #max horizon in steps
         self.goal = np.array([1.0, 0.0]) #Need to reach target location 1 on the number line at stationary velocity.       
         
         action_high = np.array([np.finfo(np.float32).max])
@@ -75,7 +75,7 @@ class SpaceshipEnv(gym.Env):
             #print((self.goal - self.state) / np.linalg.norm(self.goal - self.state))
             #print(np.array([self.state[1], a]))
             #IPython.embed()
-            R1 = np.dot((self.goal[0] - self.state[0]) / np.linalg.norm(self.goal[0] - self.state[0]), np.array([self.state[1], a])[0])
+            R1 = np.dot((self.goal - self.state) / np.linalg.norm(self.goal- self.state), np.array([self.state[1], a]))
             #if self.state[0] < self.goal[0]:
             #    R1 = self.state[1]
             #else:

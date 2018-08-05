@@ -33,10 +33,10 @@ actions = []
 class Policy(nn.Module):
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(2, 2)
+        self.affine1 = nn.Linear(2, 4)
         torch.nn.init.normal_(self.affine1.weight)
         torch.nn.init.normal_(self.affine1.bias)
-        self.affine2 = nn.Linear(2, 2)
+        self.affine2 = nn.Linear(4, 2)
         torch.nn.init.normal_(self.affine2.weight)
         torch.nn.init.normal_(self.affine2.bias)
 
@@ -60,7 +60,7 @@ class Policy(nn.Module):
 
 
 policy = Policy()
-optimizer = optim.Adam(policy.parameters(), lr=1.0e-4)
+optimizer = optim.Adam(policy.parameters(), lr=1.0e-6)
 eps = np.finfo(np.float32).eps.item()
 
 
@@ -81,7 +81,10 @@ def finish_episode(i):
     for r in policy.rewards:
         rewards.append(r)
     rewards = torch.tensor(rewards)
-    #rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+    if i % 1000 == 0:
+        print('mean reward is ', torch.mean(rewards))
+    rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+    
     for log_prob, reward in zip(policy.saved_log_probs, rewards):
         policy_loss.append(-log_prob * reward.float())
     optimizer.zero_grad()
@@ -90,8 +93,7 @@ def finish_episode(i):
     optimizer.step()
     #let's just print out the norm of part of the paramters here, for simplicity:
     if i % 1000 == 0:
-        print('loss is ', -policy_loss)
-        print('mean reward is ', torch.mean(rewards))
+        print('loss is ', -policy_loss)        
         print('some of the norm is')
         print(np.linalg.norm(list(policy.parameters())[1].grad.detach().numpy()))
     
@@ -104,7 +106,7 @@ def main():
     i = 0
     for i_episode in count(1):
         state = env.reset()        
-        for t in range(100000):  # Don't infinite loop while learning
+        for t in range(10000):  # Don't infinite loop while learning
             i += 1
             #TODO: make sure episodes line up with rollouts or in some way flag that we're in the final step
             action = select_action(state)
@@ -113,7 +115,7 @@ def main():
             if args.render:
                 env.render()
             if done:
-                env.reset(random=True)
+                env.reset(random=False)
                 policy.commit()
             
 
