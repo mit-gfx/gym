@@ -32,10 +32,10 @@ class Policy(nn.Module):
     #TODO: definitely want to change this model
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(2, 128)
+        self.affine1 = nn.Linear(2, 2)
         torch.nn.init.normal(self.affine1.weight)
         torch.nn.init.normal(self.affine1.bias)
-        self.affine2 = nn.Linear(128, 2)
+        self.affine2 = nn.Linear(2, 2)
         torch.nn.init.normal(self.affine2.weight)
         torch.nn.init.normal(self.affine2.bias)
 
@@ -49,7 +49,7 @@ class Policy(nn.Module):
 
 
 policy = Policy()
-optimizer = optim.Adam(policy.parameters(), lr=1e-2)
+optimizer = optim.Adam(policy.parameters(), lr=1.0e-2)
 eps = np.finfo(np.float32).eps.item()
 
 
@@ -71,11 +71,12 @@ def finish_episode():
         R = r + args.gamma * R
         rewards.insert(0, R)
     rewards = torch.tensor(rewards)
-    rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
+    #rewards = (rewards - rewards.mean()) / (rewards.std() + eps)
     for log_prob, reward in zip(policy.saved_log_probs, rewards):
         policy_loss.append(-log_prob * reward.float())
     optimizer.zero_grad()
     policy_loss = torch.cat(policy_loss).sum()
+    print('loss is ', policy_loss)
     policy_loss.backward(retain_graph=True, create_graph=True)
     optimizer.step()
     #let's just print out the norm of part of the paramters here, for simplicity:

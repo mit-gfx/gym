@@ -59,11 +59,16 @@ class SpaceshipEnv(gym.Env):
         #Accrue rewards:
         #fail_val = -np.finfo(np.float32).max  #TODO: Make this a large but not absurd value that upper bounds R1 and R2
         fail_val = -1000.0
-        if fail:
+        #if fail:
+        if False:
             R1 = fail_val
             R2 = fail_val
         else:
-            R1 = -1.0 #time
+            R1 = -np.linalg.norm(self.state - self.goal)
+            #if self.state[0] < self.goal[0]:
+            #    R1 = self.state[1]
+            #else:
+            #    R1 = -self.state[1]
             R2 = -np.inner(action, action)
             
         #reward = np.array([R1, R2])
