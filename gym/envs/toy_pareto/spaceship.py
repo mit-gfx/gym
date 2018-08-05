@@ -21,7 +21,7 @@ class SpaceshipEnv(gym.Env):
         
         obs_high = np.array([np.finfo(np.float32).max, np.finfo(np.float32).max])
         self.observation_space = spaces.Box(-obs_high, obs_high) #x and v
-        self.dt = 0.05
+        self.dt = 0.1
         
         self.seed(0)
         self.viewer = None
@@ -64,7 +64,7 @@ class SpaceshipEnv(gym.Env):
             R1 = fail_val
             R2 = fail_val
         else:
-            R1 = np.dot(self.goal - self.state, np.array([self.state[1], a]))
+            R1 = np.dot((self.goal - self.state) / np.linalg.norm(self.goal - self.state), np.array([self.state[1], a]))
             #if self.state[0] < self.goal[0]:
             #    R1 = self.state[1]
             #else:
