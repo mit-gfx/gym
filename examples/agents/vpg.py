@@ -31,31 +31,34 @@ torch.manual_seed(args.seed)
 class Policy(nn.Module):
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(2, 2)
-        torch.nn.init.normal(self.affine1.weight)
-        torch.nn.init.normal(self.affine1.bias)
-        self.affine2 = nn.Linear(2, 2)
-        torch.nn.init.normal(self.affine2.weight)
-        torch.nn.init.normal(self.affine2.bias)
+        self.affine1 = nn.Linear(2, 20)
+        torch.nn.init.normal_(self.affine1.weight)
+        torch.nn.init.normal_(self.affine1.bias)
+        self.affine2 = nn.Linear(20, 2)
+        torch.nn.init.normal_(self.affine2.weight)
+        torch.nn.init.normal_(self.affine2.bias)
 
         self.saved_log_probs = []
+        self.log_probs = []
         self.rewards = []
         self.step_rewards = []
 
     def forward(self, x):        
-        x = F.tanh(self.affine1(x))
-        action_scores = F.tanh(self.affine2(x))
+        x = torch.tanh(self.affine1(x))
+        action_scores = torch.tanh(self.affine2(x))
         return action_scores
         
-    def commit_rewards(self):
+    def commit(self):
         self.rewards.append(np.mean(self.step_rewards))
+        self.saved_log_probs.append(torch.sum(torch.stack(self.log_probs)))
         self.step_rewards = []
+        self.log_probs = []
         
 
 
 
 policy = Policy()
-optimizer = optim.Adam(policy.parameters(), lr=1.0e-4)
+optimizer = optim.Adam(policy.parameters(), lr=1.0e-2)
 eps = np.finfo(np.float32).eps.item()
 
 
@@ -64,7 +67,7 @@ def select_action(state):
     probs = policy(state)
     m = Normal(probs[0][0], torch.abs(probs[0][1]))
     action = m.sample()
-    policy.saved_log_probs.append(m.log_prob(action))
+    policy.log_probs.append(m.log_prob(action))
     #TODO: this only works because the action is 1-D
     return action.item()
 
@@ -108,7 +111,7 @@ def main():
                 env.render()
             if done:
                 env.reset(random=True)
-                policy.commit_rewards()
+                policy.commit()
             
 
         #print(np.mean(policy.rewards))
